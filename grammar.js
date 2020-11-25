@@ -64,12 +64,22 @@ module.exports = grammar({
   ],
 
   conflicts: $ => [
+    [$._non_binary_expression, $._expression],
+    [$._non_binary_expression, $._property_name],
+    [$._non_binary_expression, $._property_name, $.arrow_function],
+    [$._non_binary_expression, $.arrow_function],
+    [$._non_binary_expression, $.method_definition],
+    [$._non_binary_expression, $.formal_parameters],
+    [$._non_binary_expression, $.rest_parameter],
+    [$._non_binary_expression, $._for_header],
+
     [$._expression, $._property_name],
     [$._expression, $._property_name, $.arrow_function],
     [$._expression, $.arrow_function],
     [$._expression, $.method_definition],
     [$._expression, $.formal_parameters],
     [$._expression, $.rest_parameter],
+
     [$.labeled_statement, $._property_name],
     [$.assignment_pattern, $.assignment_expression],
     [$.computed_property_name, $.array],
@@ -400,7 +410,7 @@ module.exports = grammar({
       $.sequence_expression
     ),
 
-    _expression: $ => choice(
+    _non_binary_expression: $ => choice(
       $._primary_expression,
       $._jsx_element,
       $.jsx_fragment,
@@ -408,11 +418,15 @@ module.exports = grammar({
       $.augmented_assignment_expression,
       $.await_expression,
       $.unary_expression,
-      $.binary_expression,
       $.ternary_expression,
       $.update_expression,
       $.new_expression,
       $.yield_expression,
+    ),
+
+    _expression: $ => choice(
+      $._non_binary_expression,
+      $.binary_expression,
     ),
 
     _primary_expression: $ => choice(
@@ -760,9 +774,9 @@ module.exports = grammar({
         ['in', PREC.REL],
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
-          field('left', $._expression),
+          field('left', $._non_binary_expression),
           field('operator', operator),
-          field('right', $._expression)
+          field('right', $._non_binary_expression)
         ))
       )
     ),
@@ -1028,10 +1042,6 @@ module.exports = grammar({
     ),
 
     _property_name: $ => choice(
-      alias(choice(
-        $.identifier,
-        $._reserved_identifier
-      ), $.property_identifier),
       $.string,
       $.number,
       $.computed_property_name
